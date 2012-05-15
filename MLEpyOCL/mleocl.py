@@ -1,6 +1,7 @@
 import pyopencl as cl
 import pyopencl.array as cla
 import numpy as np
+import os
 
 SITES = 1024
 CHARACTERS = 64
@@ -8,7 +9,23 @@ NODES = 200
 
 
 def mleOCL():
-    ctx = cl.create_some_context()
+    # Platform test
+    if len(cl.get_platforms()) > 1:
+        for found_platform in cl.get_platforms():
+            if found_platform.name == 'NVIDIA CUDA':
+                my_platform = found_platform
+                print "Selected platform:", my_platform.name
+    else: my_platform = cl.get_platforms()[0]
+    
+    for device in my_platform.get_devices():
+      dev_type = cl.device_type.to_string(device.type)
+      if dev_type == 'GPU':
+            dev = device
+            print "Selected device: ", dev_type
+    
+    # context
+    ctx = cl.Context([dev])
+    #ctx = cl.create_some_context()
     queue = cl.CommandQueue(ctx)
     kernel = defKernel()
 
@@ -82,4 +99,5 @@ __kernel void FirstLoop(__global const fpoint* node_cache,
     """
 
 if __name__ =="__main__":
+    print os.environ['PYOPENCL_CTX']
     mleOCL()
