@@ -1,15 +1,20 @@
 import pyopencl as cl
 import pyopencl.array as cla
 import numpy as np
-import os
+import sys
 
 SITES = 1024
 CHARACTERS = 64
-NODES = 200
+NODES = 20
 
 
 def mleOCL():
     # Platform test
+    deviceOfChoice = 'GPU'
+    if len(sys.argv) > 1:
+        deviceOfChoice = sys.argv[1]
+    print "Platform of choice: ", deviceOfChoice
+        
     if len(cl.get_platforms()) > 1:
         for found_platform in cl.get_platforms():
             if found_platform.name == 'NVIDIA CUDA':
@@ -19,7 +24,7 @@ def mleOCL():
     
     for device in my_platform.get_devices():
       dev_type = cl.device_type.to_string(device.type)
-      if dev_type == 'GPU':
+      if dev_type == deviceOfChoice:
             dev = device
             print "Selected device: ", dev_type
     
@@ -38,6 +43,12 @@ def mleOCL():
     parent_array = cla.to_device(queue, parent_cache)
     scalings_array = cla.to_device(queue, scalings_cache)
     model_array = cla.to_device(queue, model)
+    
+    global_size = (CHARACTERS*SITES,)
+    if deviceOfChoice == 'CPU':
+        local_size = None
+    else:
+        local_size = (CHARACTERS,)
 
     uflowthresh = 0.00000001
     scalar = 100.0
@@ -45,7 +56,11 @@ def mleOCL():
     prg = cl.Program(ctx, kernel).build()
     
     for i in range(NODES):
-        event = prg.FirstLoop(queue, (CHARACTERS*SITES,), (CHARACTERS,), 
+        event = prg.FirstLoop(queue, 
+                global_size,
+                local_size,
+                #(CHARACTERS*SITES,), 
+                #(CHARACTERS,), 
                 node_array.data, 
                 model_array.data, 
                 parent_array.data,
@@ -90,14 +105,13 @@ __kernel void FirstLoop(__global const fpoint* node_cache,
         sum += nodeScratch[myChar] * modelScratch[myChar];     
     }
     barrier(CLK_LOCAL_MEM_FENCE);
-    while (parent_cache[parentCharGlobal] < uflowthresh) {
-        parent_cache[parentCharGlobal] *= scalar;
-        scalings[parentCharGlobal] += 1;
-    }       
+    //while (parent_cache[parentCharGlobal] < uflowthresh) {
+        //parent_cache[parentCharGlobal] *= scalar;
+        //scalings[parentCharGlobal] += 1;
+    //}       
     parent_cache[parentCharGlobal] *= sum;
 }
     """
 
 if __name__ =="__main__":
-    print os.environ['PYOPENCL_CTX']
     mleOCL()

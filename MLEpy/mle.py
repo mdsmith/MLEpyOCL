@@ -1,6 +1,6 @@
 SITES = 1024
 CHARACTERS = 64
-NODES = 200
+NODES = 20
 
 def naiveCPU():
     
