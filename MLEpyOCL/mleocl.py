@@ -13,20 +13,20 @@ def mleOCL():
     deviceOfChoice = 'GPU'
     if len(sys.argv) > 1:
         deviceOfChoice = sys.argv[1]
-    print "Platform of choice: ", deviceOfChoice
+    print("Platform of choice: ", deviceOfChoice)
         
     if len(cl.get_platforms()) > 1:
         for found_platform in cl.get_platforms():
             if found_platform.name == 'NVIDIA CUDA':
                 my_platform = found_platform
-                print "Selected platform:", my_platform.name
+                print("Selected platform:", my_platform.name)
     else: my_platform = cl.get_platforms()[0]
     
     for device in my_platform.get_devices():
       dev_type = cl.device_type.to_string(device.type)
       if dev_type == deviceOfChoice:
             dev = device
-            print "Selected device: ", dev_type
+            print("Selected device: ", dev_type)
     
     # context
     ctx = cl.Context([dev])
